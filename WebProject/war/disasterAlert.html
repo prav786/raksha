@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<script type="text/javascript"
+	src="http://www.google.com/jsapi?key=ABQIAAAAbnvDoAoYOSW2iqoXiGTpYBTlJ8fgyfAsCHHaKAeDycSIN-HlVBQPL2QmfBm25WCgxO5AHIUmI6Jong&autoload=%7Bmodules%3A%5B%7Bname%3A%22maps%22%2Cversion%3A3%2Cother_params%3A%22sensor%3Dtrue%22%7D%5D%7D"></script>
+<script type="text/javascript">
+//google.setOnLoadCallback(function() {
+	loadDisasterAlert();    
+//});
+
+var latitude;
+var longitude;
+
+function locateMap() {
+    // the default map location is Sydney Harbour.
+    // this will be used only if we have no geolocation success below
+
+    // google loader will provide an approximate location
+    // based on the network IP address exposed by the mobile operator gateway
+    // see http://code.google.com/apis/ajax/documentation/#ClientLocation
+    if (typeof(google.loader.ClientLocation) != 'undefined') {
+            try {
+                    latitude=google.loader.ClientLocation.latitude;
+                    longitude=google.loader.ClientLocation.longitude;
+            } catch (e) {}
+    }
+
+    // W3C geolocation API provides an accurate location from on-device GPS if available (e.g. iPhone OS3.0+)
+    // see http://dev.w3.org/geo/api/spec-source.html
+    // note: this is an asynchronous API that returns success or failure after device &/or user response
+    if (typeof(navigator.geolocation) != 'undefined') {
+            try {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                            // success - geolocation authorized by user. relocate the map.
+                            latitude=position.coords.latitude;
+                            longitude=position.coords.longitude;
+                    }, function() {
+                            // fail - geolocation denied by user. do nothing.
+                    });
+            } catch (e) {}
+
+    // Google Gears uses GPS &/or cell-tower location - see http://googlemobile.blogspot.com/2008/06/google-enables-location-aware.html
+    // and is included in most Android 1.0+ devices using Chrome Lite browser
+    } else if (typeof(google.gears) != 'undefined') {
+            try {
+                    var geo = google.gears.factory.create('beta.geolocation');
+                    geo.getCurrentPosition(function(position) {
+                            // success - geolocation authorized by user. relocate the map.
+                            latitude=position.latitude;
+                            longitude=position.longitude;
+                    }, function() {
+                            // fail - geolocation denied by user. do nothing.
+                    });
+            } catch (e) {}
+    }
+    loadDisasterAlert();
+
+
+}
+
+
+function loadDisasterAlert() {
+    var url='rhokproject1?method=getdisasteralert&userid=111&location=hawthorn';
+ 	  fetchCheckList(url);
+}
+
+var xmlHttpRequest = (window.XMLHttpRequest) ? new XMLHttpRequest() :
+    new ActiveXObject("Microsoft.XMLHTTP");
+
+function fetchCheckList(url)
+{
+
+	if (window.XMLHttpRequest) {
+	//for firefox, opera and safari browswers
+		xmlHttpRequest= new XMLHttpRequest();
+	}
+	if (typeof XMLHttpRequest == "undefined")
+		XMLHttpRequest = function () {
+	try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); }
+	catch (e) {}
+	try { return new ActiveXObject("Msxml2.XMLHTTP.3.0"); }
+	catch (e) {}
+	try { return new ActiveXObject("Msxml2.XMLHTTP"); }
+	catch (e) {}
+	//Microsoft.XMLHTTP points to Msxml2.XMLHTTP.3.0 and is redundant
+		throw new Error("This browser does not support XMLHttpRequest.");
+	};
+
+	if (xmlHttpRequest == null) {
+		return;
+	}
+	xmlHttpRequest.open("GET",url, true);
+	xmlHttpRequest.onreadystatechange = displayDisasterAlert;
+	xmlHttpRequest.send(null);
+}
+
+
+function displayDisasterAlert()
+{
+	
+	if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status == 200)
+	{
+		alert(xmlHttpRequest.responseText);
+		var disasterAlert = eval(xmlHttpRequest.responseText);
+		
+		
+	}
+
+
+}
+
+
+</script>
+<title>Disaster alert</title>
+</head>
+<body>
+<img src="logo.jpg">
+	<b>This page will appear when there is a disaster and user opens
+		the application</b>
+		<br/>
+		<hr/>
+	<div id="alert">
+	<p><span id="message">Alert: There is a bushfire in hawthorn area.</span></p>
+	</div>
+	
+	<div id="checklist">
+	<span id="checklistSpan">
+	Please ensure availability of the following medicines
+     <br/>1. Syringes
+     <br/>2. Needles (4/5/6/8mm pen)
+     <br/>3. Blood glucose meters (Roche /Abbott)
+     <br/>4. Blood glucose test strips (Accuchek / Optium)
+     <br>5. Hypoglycamia supplies (glucagon / glucose tablets / glucose gel / jelly beans)
+     	
+	</span>
+	
+	  <p> <a href="patientSupplierInfo.html">View Available Suppliers</a></p>
+	  <p> <a href="reportDisaster.html">Report Disaster</a></p>
+	  <p> <a href="reportAvailabilityOfSupplier.html">Update Availability Status Of Supplier</a>
+	</div>
+
+
+</body>
+</html>

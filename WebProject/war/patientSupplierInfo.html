@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAAbnvDoAoYOSW2iqoXiGTpYBTlJ8fgyfAsCHHaKAeDycSIN-HlVBQPL2QmfBm25WCgxO5AHIUmI6Jong&autoload=%7Bmodules%3A%5B%7Bname%3A%22maps%22%2Cversion%3A3%2Cother_params%3A%22sensor%3Dtrue%22%7D%5D%7D"></script>
+<script type="text/javascript">
+google.setOnLoadCallback(function() {
+        setViewport();
+        //dispTable();
+        locateMap();
+});
+
+var map;
+var markers = {};
+
+function setViewport() {
+        // set map size to full screen
+        width = window.innerWidth ? (window.innerWidth/2) + 'px' : '20%';
+        height = window.innerHeight ? (window.innerHeight/2) + 'px' : '20%';
+
+        var map_div = document.getElementById('map');
+        map_div.style.width = width;
+        map_div.style.height = height;
+
+        var HealthServ_div = document.getElementById('HealthServ');
+        HealthServ_div.style.width = width;
+        HealthServ_div.style.height = height;
+}
+
+
+
+
+
+function locateMap() {
+        // the default map location is Sydney Harbour.
+        // this will be used only if we have no geolocation success below
+        var mapOptions = {
+                center: new google.maps.LatLng(-33.858362, 151.214876),
+                zoom: 15,
+                mapTypeId: google.maps.MapTypeId.TERRAIN,
+                mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU }
+        };
+
+        // google loader will provide an approximate location
+        // based on the network IP address exposed by the mobile operator gateway
+        // see http://code.google.com/apis/ajax/documentation/#ClientLocation
+        if (typeof(google.loader.ClientLocation) != 'undefined') {
+                try {
+                        mapOptions.center = new google.maps.LatLng(google.loader.ClientLocation.latitude, google.loader.ClientLocation.longitude);
+                        mapOptions.zoom = 10;
+                } catch (e) {}
+        }
+
+        // initialize map
+        map = new google.maps.Map(document.getElementById('map'), mapOptions);
+
+        // W3C geolocation API provides an accurate location from on-device GPS if available (e.g. iPhone OS3.0+)
+        // see http://dev.w3.org/geo/api/spec-source.html
+        // note: this is an asynchronous API that returns success or failure after device &/or user response
+        if (typeof(navigator.geolocation) != 'undefined') {
+                try {
+                        navigator.geolocation.getCurrentPosition(function(position) {
+                                // success - geolocation authorized by user. relocate the map.
+                                map.setOptions({
+                                        center: new google.maps.LatLng(position.coords.latitude, position.coords.longitude),
+                                        zoom: 20
+                                });
+                        }, function() {
+                                // fail - geolocation denied by user. do nothing.
+                        });
+                } catch (e) {}
+
+        // Google Gears uses GPS &/or cell-tower location - see http://googlemobile.blogspot.com/2008/06/google-enables-location-aware.html
+        // and is included in most Android 1.0+ devices using Chrome Lite browser
+        } else if (typeof(google.gears) != 'undefined') {
+                try {
+                        var geo = google.gears.factory.create('beta.geolocation');
+                        geo.getCurrentPosition(function(position) {
+                                // success - geolocation authorized by user. relocate the map.
+                                map.setOptions({
+                                        center: new google.maps.LatLng(position.latitude, position.longitude),
+                                        zoom: 15
+                                });
+                        }, function() {
+                                // fail - geolocation denied by user. do nothing.
+                        });
+                } catch (e) {}
+        }
+
+        // listen for map becoming idle after manual panning or zooming, or after asynchronous geolocation
+        google.maps.event.addListener(map, 'idle', function() {
+                loadLocations();
+        });
+
+        // detect device orientation change and adjust map viewport
+        window.onresize = setViewport;
+}
+
+function loadLocations() {
+      var url='rhokproject1?method=getavailablestores&callback=mapPharmacies&location=';
+	  var centerString = ""+map.getCenter();
+	  url += centerString.substring(1,centerString.length-2);
+   	  FetchSuppliers(url);
+
+}
+//var xmlHttpRequest = (window.XMLHttpRequest) ? new XMLHttpRequest() :
+//                     new ActiveXObject("Msxml2.XMLHTTP");
+
+var xmlHttpRequest = (window.XMLHttpRequest) ? new XMLHttpRequest() :
+                     new ActiveXObject("Microsoft.XMLHTTP");
+
+function FetchSuppliers(url)
+{
+
+	if (window.XMLHttpRequest) {
+		//for firefox, opera and safari browswers
+		xmlHttpRequest= new XMLHttpRequest();
+	}
+	if (typeof XMLHttpRequest == "undefined")
+		XMLHttpRequest = function () {
+    try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); }
+      catch (e) {}
+    try { return new ActiveXObject("Msxml2.XMLHTTP.3.0"); }
+      catch (e) {}
+    try { return new ActiveXObject("Msxml2.XMLHTTP"); }
+      catch (e) {}
+    //Microsoft.XMLHTTP points to Msxml2.XMLHTTP.3.0 and is redundant
+    throw new Error("This browser does not support XMLHttpRequest.");
+    };
+
+	 if (xmlHttpRequest == null) {
+		return;
+	}
+	xmlHttpRequest.open("GET",url, true);
+	xmlHttpRequest.onreadystatechange = StateChangeForJSON;
+	xmlHttpRequest.send(null);
+
+}
+
+
+function StateChangeForJSON()
+{
+
+	if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status == 200)
+	{
+	    var new_markers = {};
+
+		//var supplierArray=eval('[{"supplier": { "id": "14165277", "name": "Hawthorn Pharmore Pharmacy", "lat": "-37.81928", "long": "145.03636", "phone": "(03) 9818 1952", "address": "736-738 Glenferrie Rd"}}, {"supplier": { "id": "13978856", "name": "Chemist Warehouse Hawthorn", "lat": "-37.81968", "long": "145.03552", "phone": "(03) 9818 3999", "address": "701 Glenferrie Rd"}}, {"supplier": { "id": "12018968", "name": "St James Pharmacy", "lat": "-37.81466", "long": "145.02168", "phone": "(03) 9853 6602", "address": "50 Church St"}}]');
+		var supplierArray = eval(xmlHttpRequest.responseText);
+
+		for(var i=0; i < supplierArray.length; i++)
+		{
+			if (supplierArray[i].supplier.id in markers) {
+					new_markers[supplierArray[i].supplier.name] = markers[supplierArray[i].supplier.id];
+					new_markers[supplierArray[i].supplier.lat] = markers[supplierArray[i].supplier.lat];
+					new_markers[supplierArray[i].supplier.long] = markers[supplierArray[i].supplier.long];
+			} else {
+			   marker=getSupplierMarker(supplierArray[i].supplier);
+			   addClickHandler(marker, supplierArray[i].supplier);
+			   new_markers[supplierArray[i].supplier.name] = marker;
+			}
+		}
+		// remove old markers
+		for (var name in markers) {
+				if (!(name in new_markers)) {
+						markers[name].setMap(null);
+						delete markers[name];
+				}
+		}
+
+		markers = new_markers;
+	}
+}
+
+function getSupplierMarker(supplier) {
+		marker = new google.maps.Marker({
+				position: new google.maps.LatLng(supplier.lat, supplier.long),
+				//icon: phData.photo_file_url,
+				map: map
+		});
+}
+
+
+// reuse showHealthServ() rather than defining a separate click handler for every photo
+function addClickHandler(marker, supplier) {
+        google.maps.event.addListener(marker, 'click', function() {
+                showHealthServ(supplier);
+        });
+}
+
+// show HealthServ in front of map view
+function showHealthServ(supplier) {
+        document.getElementById('supplierUrl').href = supplier.url;
+        document.getElementById('supplier_title').innerHTML = supplier.name;
+        document.getElementById('phonenumber').innerHTML = supplier.phone;
+        //document.getElementById('twitter_url').href = 'http://twitter.com/home?status=' + encodeURIComponent('Here I Am! ' + photo.photo_url);
+        //document.getElementById('facebook_url').href = 'http://www.facebook.com/sharer.php?u=' + encodeURIComponent(photo.photo_url) + '&t=' + encodeURIComponent('Here I Am!');
+        document.getElementById('HealthServ').style.display = 'block';
+}
+
+// hide HealthServ and return to map view
+function hideHealthServ() {
+        document.getElementById('HealthServ').style.display = 'none';
+}
+
+</script>
+<body>
+<img src="logo.jpg"><br/>
+<table>
+<tr>
+<td width="200px"><img src="med.jpg"><div id="HealthServ" >
+<a id="supplierUrl" href="www.hawthornpharmacy.com">website</a>
+</div>
+</td>
+<td><div id="map"></div></td>
+</tr>
+</table>
+
+</body>
+</html>
